@@ -7,7 +7,8 @@ import {SocketIOProvider} from "y-socket.io";
 
 const App = () => {
 
-  const editorRef = useRef(null)
+  const editorRef = useRef(null);
+const [isEditorReady, setIsEditorReady] = useState(false);
   const [username, setUsername] = useState(()=>{
     return new URLSearchParams(window.location.search).get("username") || ""
   })
@@ -17,9 +18,10 @@ const App = () => {
   const ydoc = useMemo(()=> new Y.Doc, [])
   const yText = useMemo(()=> ydoc.getText("monaco"), [ydoc])
 
-  const handleMount = (editor) =>{
-    editorRef.current = editor
-  }
+  const handleMount = (editor) => {
+  editorRef.current = editor;
+  setIsEditorReady(true);
+};
 
 
 
@@ -39,10 +41,31 @@ const App = () => {
       })
 
       provider.awareness.setLocalStateField("user", {username})
+
+     const states = Array.from(provider.awareness.getStates().values());
+
+setUsers(
+  states
+    .filter((state) => state.user && state.user.username)
+    .map((state) => state.user)
+);
+
+
       provider.awareness.on("change", ()=>{
-        const states = Array.from(provider.awareness.getStates().values())
-        setUsers(states.map(state=> state.user).filter(user=>Boolean(user.username)))
+        const states = Array.from(provider.awareness.getStates().values());
+
+setUsers(
+  states
+    .filter((state) => state.user && state.user.username)
+    .map((state) => state.user)
+);
       })
+
+      function handleBeforeUnload(){
+        provider.awareness.setLocalStateField("user", null)
+      }
+
+      window.addEventListener("beforeunload", handleBeforeUnload)
 
       const monacoBinding = new MonacoBinding(
         yText,
@@ -50,8 +73,14 @@ const App = () => {
         new Set([editorRef.current]), 
         provider.awareness)
 
+        return ()=>{
+          monacoBinding.destroy()
+          provider.disconnect()
+          window.removeEventListener("beforeunload", handleBeforeUnload)
+        }
+
     }
-  }, [editorRef.current, yText, username])
+  }, [isEditorReady,  username])
 
   if(!username){
     return(
@@ -75,12 +104,20 @@ const App = () => {
    <main className="h-screen w-full bg-gray-950 flex gap-4 p-2">
 
     <aside className="h-full w-1/4 bg-amber-50 rounded-lg">
+      <h2 className="text-2xl font-bold p-4 border-b">Users</h2>
+      <ul className="p-4 flex flex-col gap-2">
+        {users.map((user, index)=>(
+          <li key={index} className="p-2 bg-gray-800 text-white rounded-lg">
+            {user.username}
+          </li>
+        ))}
+      </ul>
     </aside>
     <section className="w-3/4 bg-neutral-800 rounded-lg overflow-hidden">
       <Editor 
         height="100%"
         defaultLanguage="javascript"
-        defaultValue="// some comment"
+        defaultValue="//some comment"
         theme="vs-dark"
         onMount={handleMount}
       />
