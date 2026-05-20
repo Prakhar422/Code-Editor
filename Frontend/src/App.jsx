@@ -1,6 +1,8 @@
 import React from "react";
 import { AuroraText } from "./components/AuroraText";
 import { Editor } from "@monaco-editor/react";
+import {MonacoBinding} from "y-monaco";
+
 
 const App = () => {
   return (
