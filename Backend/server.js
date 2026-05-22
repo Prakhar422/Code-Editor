@@ -4,7 +4,11 @@ import { Server } from "socket.io";
 import {YSocketIO} from "y-socket.io/dist/server";
 
 const app = express()
-const httpServer = createServer(app)
+app.use(express.json())
+app.use(express.static("public")) // Serve static files from the "public" directory
+
+
+const httpServer = createServer(app)    
 
 const io = new Server(httpServer,{
     cors: {
@@ -16,12 +20,7 @@ const io = new Server(httpServer,{
 const ySocketIO = new YSocketIO(io)
 ySocketIO.initialize()
 
-app.get("/", (req,res)=>{
-    res.status(200).json({
-        message: "Hello World",
-        success: true
-    })
-})
+
 
 app.get("/health", (req, res)=>{
     res.status(200).json({
